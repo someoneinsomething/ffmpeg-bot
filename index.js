@@ -4,6 +4,7 @@ const path = require("path");
 const archiver = require("archiver");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
+require("dotenv").config();
 
 const { downloadFile, extractFiles } = require("./file");
 const { getRandomBrightness } = require("./utils");
@@ -11,7 +12,7 @@ const { getRandomBrightness } = require("./utils");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // Замени значения на свои токены и пути к файлам
-const BOT_TOKEN = "6994063348:AAGAjAuHBEqu_0GFmBFNNfEXmORE0U3BD-g";
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const ARCHIVE_PATH = path.join(__dirname, "archive.zip");
 const TEMP_FOLDER = path.join(__dirname, "temp");
 
