@@ -4,10 +4,11 @@ const path = require("path");
 const archiver = require("archiver");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
+const { exec } = require("child_process");
 require("dotenv").config();
 
 const { downloadFile, extractFiles } = require("./file");
-const { getRandomBrightness } = require("./utils");
+const { getRandomBrightness, getRandomSaturation } = require("./utils");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -190,48 +191,6 @@ async function getMediaFiles(folderPath) {
   });
 }
 
-// Функция получения списка видеофайлов
-async function getVideoFiles(folderPath) {
-  return new Promise((resolve, reject) => {
-    fs.readdir(folderPath, async (err, extractedFolders) => {
-      if (err) {
-        console.error("Error reading directory:", err);
-        reject(err);
-        return;
-      }
-
-      let videoFiles = [];
-
-      for (const extractedFolder of extractedFolders) {
-        const extractedFolderFullPath = path.join(folderPath, extractedFolder);
-
-        const filesInExtractedFolder = await fs.promises.readdir(
-          extractedFolderFullPath
-        );
-
-        const extractedVideoFiles = filesInExtractedFolder
-          .filter((file) => {
-            const ext = path.extname(file).toLowerCase();
-            return [
-              ".mp4",
-              ".avi",
-              ".mov",
-              ".wmv",
-              ".mkv",
-              ".flv",
-              ".webm",
-            ].includes(ext);
-          })
-          .map((file) => path.join(extractedFolderFullPath, file));
-
-        videoFiles = videoFiles.concat(extractedVideoFiles);
-      }
-
-      resolve(videoFiles);
-    });
-  });
-}
-
 async function applyEffect(inputPath) {
   return new Promise(async (resolve, reject) => {
     try {
@@ -264,20 +223,37 @@ async function applyVideoEffect(videoPath) {
       ); // Создаем новый путь с измененным расширением
 
       const randomBrightness = getRandomBrightness();
+      const randomSaturation = getRandomSaturation();
 
-      ffmpeg(videoPath)
-        .videoFilters(`eq=brightness=${randomBrightness}`) // Увеличиваем яркость для видео
-        .on("error", (err) => {
-          console.error("Error applying video effect:", err);
-          reject(err);
-        })
-        .on("end", () => {
+      exec(
+        `ffmpeg -i ${videoPath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputVideoPath}`,
+        (err, stdout, stderr) => {
+          if (err) {
+            console.error("Error removing metadata:", err);
+            return reject(err);
+          }
           console.log("Effect applied to video:", videoPath);
           fs.unlinkSync(videoPath);
           fs.renameSync(outputVideoPath, videoPath);
           resolve(outputVideoPath);
-        })
-        .save(outputVideoPath);
+        }
+      );
+
+      // ffmpeg(videoPath)
+      //   .outputOptions("-map_metadata", "-1")
+      //   .videoFilters(`eq=brightness=${randomBrightness}`) // Увеличиваем яркость для видео
+      //   // Удаляем метаданные
+      //   .on("error", (err) => {
+      //     console.error("Error applying video effect:", err);
+      //     reject(err);
+      //   })
+      //   .on("end", () => {
+      //     console.log("Effect applied to video:", videoPath);
+      //     fs.unlinkSync(videoPath);
+      //     fs.renameSync(outputVideoPath, videoPath);
+      //     resolve(outputVideoPath);
+      //   })
+      //   .save(outputVideoPath);
     } catch (e) {
       reject(e);
     }
@@ -291,23 +267,39 @@ async function applyImageEffect(imagePath) {
       const outputImagePath = imagePath.replace(
         fileExt,
         "_processed" + fileExt
-      ); // Создаем новый путь с измененным расширением
+      );
 
       const randomBrightness = getRandomBrightness();
+      const randomSaturation = getRandomSaturation();
 
-      ffmpeg(imagePath)
-        .outputOptions("-vf", `eq=brightness=${randomBrightness}`) // Уменьшаем яркость для изображения
-        .on("error", (err) => {
-          console.error("Error applying image effect:", err);
-          reject(err);
-        })
-        .on("end", () => {
-          console.log("Effect applied to image:", imagePath);
+      console.log(randomSaturation);
+
+      exec(
+        `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputImagePath}`,
+        (err, stdout, stderr) => {
+          if (err) {
+            console.error("Error applying image effect:", err);
+            return reject(err);
+          }
           fs.unlinkSync(imagePath);
           fs.renameSync(outputImagePath, imagePath);
           resolve(outputImagePath);
-        })
-        .save(outputImagePath);
+        }
+      );
+
+      // ffmpeg(imagePath)
+      //   .outputOptions("-vf", `eq=brightness=${randomBrightness}`)
+      //   .on("error", (err) => {
+      //     console.error("Error applying image effect:", err);
+      //     reject(err);
+      //   })
+      //   .on("end", () => {
+      //     console.log("Effect applied to image:", imagePath);
+      //     fs.unlinkSync(imagePath);
+      //     fs.renameSync(outputImagePath, imagePath);
+      //     resolve(outputImagePath);
+      //   })
+      //   .save(outputImagePath);
     } catch (e) {
       reject(e);
     }
@@ -357,6 +349,7 @@ async function sendArchive(ctx, zipFileName) {
       await cleanup();
     } catch (e) {
       console.error("Error while sending archive", e);
+      await ctx.reply("Ошибка при отправке архива");
       await cleanup();
     }
   });
