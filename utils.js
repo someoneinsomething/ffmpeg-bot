@@ -4,7 +4,11 @@ function getRandomInRange(min, max) {
 
 // Генерация случайного значения для параметра яркости
 function getRandomBrightness() {
-  return getRandomInRange(-1, 1).toFixed(8); // До восьми знаков после запятой
+  return getRandomInRange(-0.07, 0.07).toFixed(8);
 }
 
-module.exports = { getRandomBrightness };
+function getRandomSaturation() {
+  return getRandomInRange(0.93, 1.07).toFixed(8);
+}
+
+module.exports = { getRandomBrightness, getRandomSaturation };
