@@ -105,46 +105,34 @@ async function processVideos(ctx, folderPath) {
   return processedCount;
 }
 
-// Функция получения списка видеофайлов
-// async function getVideoFiles(folderPath) {
-//   return new Promise((resolve, reject) => {
-//     fs.readdir(folderPath, async (err, extractedFolders) => {
-//       if (err) {
-//         console.error("Error reading directory:", err);
-//         reject(err);
-//         return;
-//       }
+function sanitizeAndRenameFile(filePath, directory) {
+  try {
+    // Получаем базовое имя файла
+    const originalFileName = filePath.split("/").pop();
 
-//       let videoFiles = [];
+    // Проверяем, есть ли недопустимые символы в названии файла
+    if (!/[$&*()!<>:"/\\|?* ]/g.test(originalFileName)) {
+      return filePath;
+    }
 
-//       for (const extractedFolder of extractedFolders) {
-//         const extractedFolderFullPath = path.join(folderPath, extractedFolder);
-//         const filesInExtractedFolder = await fs.promises.readdir(
-//           extractedFolderFullPath
-//         );
+    // Убираем недопустимые символы из названия файла
+    const sanitizedFileName = originalFileName.replace(
+      /[$&*()!<>:"/\\|?* ]/g,
+      "_"
+    );
 
-//         const extractedVideoFiles = filesInExtractedFolder
-//           .filter((file) => {
-//             const ext = path.extname(file).toLowerCase();
-//             return [
-//               ".mp4",
-//               ".avi",
-//               ".mov",
-//               ".wmv",
-//               ".mkv",
-//               ".flv",
-//               ".webm",
-//             ].includes(ext);
-//           })
-//           .map((file) => path.join(extractedFolderFullPath, file));
+    const oldFilePath = `${directory}/${filePath}`;
+    const newFilePath = `${directory}/${sanitizedFileName}`;
 
-//         videoFiles = videoFiles.concat(extractedVideoFiles);
-//       }
+    // Переименовываем файл
+    fs.renameSync(oldFilePath, newFilePath);
 
-//       resolve(videoFiles);
-//     });
-//   });
-// }
+    return sanitizedFileName;
+  } catch (error) {
+    console.error(`Ошибка при переименовании файла: ${error}`);
+    return null;
+  }
+}
 
 async function getMediaFiles(folderPath) {
   return new Promise((resolve, reject) => {
@@ -181,7 +169,16 @@ async function getMediaFiles(folderPath) {
               ".bmp",
             ].includes(ext);
           })
-          .map((file) => path.join(extractedFolderFullPath, file));
+          .map((file) => {
+            const sanitizedFilepath = sanitizeAndRenameFile(
+              file,
+              extractedFolderFullPath
+            );
+
+            console.log(file, sanitizedFilepath);
+
+            return path.join(extractedFolderFullPath, sanitizedFilepath);
+          });
 
         mediaFiles = mediaFiles.concat(extractedMediaFiles);
       }
@@ -227,14 +224,13 @@ async function applyVideoEffect(videoPath) {
 
       try {
         execSync(
-          `ffmpeg -i ${videoPath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputVideoPath}`,
-          { stdio: "inherit" }
+          `ffmpeg -i ${videoPath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputVideoPath}`
         );
 
         console.log("Effect applied to video:", videoPath);
         fs.unlinkSync(videoPath);
         fs.renameSync(outputVideoPath, videoPath);
-        resolve(outputVideoPath);
+        return resolve(outputVideoPath);
       } catch (err) {
         console.error("Error removing metadata:", err);
         return reject(err);
@@ -301,13 +297,12 @@ async function applyImageEffect(imagePath) {
 
       try {
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputImagePath}`,
-          { stdio: "inherit" }
+          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
-        resolve(outputImagePath);
-      } catch (e) {
+        return resolve(outputImagePath);
+      } catch (err) {
         console.error("Error applying image effect:", err);
         return reject(err);
       }
