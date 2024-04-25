@@ -8,7 +8,11 @@ const { exec, execSync } = require("child_process");
 require("dotenv").config();
 
 const { downloadFile, extractFiles } = require("./file");
-const { getRandomBrightness, getRandomSaturation } = require("./utils");
+const {
+  getRandomBrightness,
+  getRandomSaturation,
+  tweakResolution,
+} = require("./utils");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -87,7 +91,7 @@ async function processVideos(ctx, folderPath) {
     try {
       await applyEffect(videoFile);
       await ctx.reply(
-        `[3/5] [${i + 1}/${videoFiles.length}] ${path.basename(
+        `[3/5] [${i + 1}/${videoFiles.length}] ✅ ${path.basename(
           videoFile
         )} обработан.`
       );
@@ -95,7 +99,7 @@ async function processVideos(ctx, folderPath) {
     } catch (err) {
       console.error(`Error processing video: ${videoFile}`, err);
       await ctx.reply(
-        `[3/5] [${i + 1}/${videoFiles.length}] ${path.basename(
+        `[3/5] [${i + 1}/${videoFiles.length}] ❌ ${path.basename(
           videoFile
         )} не обработан.`
       );
@@ -132,6 +136,20 @@ function sanitizeAndRenameFile(filePath, directory) {
     console.error(`Ошибка при переименовании файла: ${error}`);
     return null;
   }
+}
+
+function getMediaResolution(videoPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const width = metadata.streams[0].width;
+      const height = metadata.streams[0].height;
+      resolve({ width, height });
+    });
+  });
 }
 
 async function getMediaFiles(folderPath) {
@@ -174,8 +192,6 @@ async function getMediaFiles(folderPath) {
               file,
               extractedFolderFullPath
             );
-
-            console.log(file, sanitizedFilepath);
 
             return path.join(extractedFolderFullPath, sanitizedFilepath);
           });
@@ -284,7 +300,7 @@ async function applyVideoEffect(videoPath) {
 }
 
 async function applyImageEffect(imagePath) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const fileExt = path.extname(imagePath);
       const outputImagePath = imagePath.replace(
@@ -295,9 +311,16 @@ async function applyImageEffect(imagePath) {
       const randomBrightness = getRandomBrightness();
       const randomSaturation = getRandomSaturation();
 
+      const resolution = await getMediaResolution(imagePath);
+      console.log("resolution", resolution);
+
+      const { newWidth, newHeight } = tweakResolution(resolution);
+
+      console.log(newWidth, newHeight);
+
       try {
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation} -map_metadata -1 ${outputImagePath}`
+          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight} -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
@@ -362,7 +385,6 @@ async function sendArchive(ctx, zipFileName) {
 
   output.on("close", async () => {
     try {
-      console.log("closed");
       await ctx.replyWithDocument(
         { source: path.join(TEMP_FOLDER, zipFileName) },
         { caption: "[5/5] Обработанные медиафайлы" }
