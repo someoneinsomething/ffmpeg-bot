@@ -19,24 +19,24 @@ function getRandomInRange(minValues, maxValues) {
 // }
 
 function getRandomNoise() {
-  return getRandom(3, 7).toFixed(4);
+  return getRandom(3, 6).toFixed(4);
 }
 
 function getRandomBrightness() {
-  const minValues = [-0.05, 0.01];
-  const maxValues = [-0.01, 0.05];
+  const minValues = [-0.03, 0.01];
+  const maxValues = [-0.01, 0.03];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
 function getRandomSaturation() {
-  const minValues = [0.95, 1.01];
-  const maxValues = [0.99, 1.05];
+  const minValues = [0.97, 1.01];
+  const maxValues = [0.99, 1.03];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
 function tweakResolution({ width, height }) {
-  const minPercentageChange = 0.03; // Минимальное изменение на 3%
-  const maxPercentageChange = 0.1; // Максимальное изменение на 10%
+  const minPercentageChange = 0.02; // Минимальное изменение на 3%
+  const maxPercentageChange = 0.07; // Максимальное изменение на 7%
 
   const percentageChange = getRandom(minPercentageChange, maxPercentageChange);
 
