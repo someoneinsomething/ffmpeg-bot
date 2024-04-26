@@ -12,6 +12,7 @@ const {
   getRandomBrightness,
   getRandomSaturation,
   tweakResolution,
+  getRandomNoise,
 } = require("./utils");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -310,17 +311,15 @@ async function applyImageEffect(imagePath) {
 
       const randomBrightness = getRandomBrightness();
       const randomSaturation = getRandomSaturation();
+      const noise = getRandomNoise();
 
       const resolution = await getMediaResolution(imagePath);
-      console.log("resolution", resolution);
 
       const { newWidth, newHeight } = tweakResolution(resolution);
 
-      console.log(newWidth, newHeight);
-
       try {
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight} -map_metadata -1 ${outputImagePath}`
+          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);

@@ -18,15 +18,19 @@ function getRandomInRange(minValues, maxValues) {
 //   return getRandom(0.93, 1.07).toFixed(8);
 // }
 
+function getRandomNoise() {
+  return getRandom(15, 30).toFixed(4);
+}
+
 function getRandomBrightness() {
-  const minValues = [-0.07, 0.03];
-  const maxValues = [-0.03, 0.07];
+  const minValues = [-0.1, 0.03];
+  const maxValues = [-0.03, 0.1];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
 function getRandomSaturation() {
-  const minValues = [0.93, 0.97];
-  const maxValues = [1.03, 1.07];
+  const minValues = [0.9, 1.03];
+  const maxValues = [0.97, 1.1];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
@@ -41,4 +45,9 @@ function tweakResolution({ width, height }) {
   return { newWidth, newHeight };
 }
 
-module.exports = { getRandomBrightness, getRandomSaturation, tweakResolution };
+module.exports = {
+  getRandomBrightness,
+  getRandomSaturation,
+  tweakResolution,
+  getRandomNoise,
+};
