@@ -60,10 +60,18 @@ bot.on("document", async (ctx) => {
     // Извлекаем файлы из архива
     await extractFiles(zipFilePath, extractedFolder);
 
+    console.log(zipFileName);
+
     await ctx.reply("[2/5] Медиафайлы разархивированы");
 
     // Обрабатываем видео
-    await processVideos(ctx, extractedFolder);
+    await processVideos(
+      ctx,
+      path.join(
+        extractedFolder,
+        path.basename(zipFileName, path.extname(zipFileName))
+      )
+    );
 
     await ctx.reply("[4/5] Медиафайлы обработаны");
 
@@ -160,56 +168,99 @@ function getMediaResolution(videoPath) {
   });
 }
 
+// async function getMediaFiles(folderPath) {
+//   return new Promise((resolve, reject) => {
+//     fs.readdir(folderPath, async (err, extractedFolders) => {
+//       if (err) {
+//         console.error("Error reading directory:", err);
+//         reject(err);
+//         return;
+//       }
+
+//       let mediaFiles = [];
+
+//       for (const extractedFolder of extractedFolders) {
+//         const extractedFolderFullPath = path.join(folderPath, extractedFolder);
+//         const filesInExtractedFolder = await fs.promises.readdir(
+//           extractedFolderFullPath
+//         );
+
+//         const extractedMediaFiles = filesInExtractedFolder
+//           .filter((file) => {
+//             const ext = path.extname(file).toLowerCase();
+//             return [
+//               ".mp4",
+//               ".avi",
+//               ".mov",
+//               ".wmv",
+//               ".mkv",
+//               ".flv",
+//               ".webm",
+//               ".jpg",
+//               ".jpeg",
+//               ".png",
+//               ".gif",
+//               ".bmp",
+//             ].includes(ext);
+//           })
+//           .map((file) => {
+//             const sanitizedFilepath = sanitizeAndRenameFile(
+//               file,
+//               extractedFolderFullPath
+//             );
+
+//             return path.join(extractedFolderFullPath, sanitizedFilepath);
+//           });
+
+//         mediaFiles = mediaFiles.concat(extractedMediaFiles);
+//       }
+
+//       resolve(mediaFiles);
+//     });
+//   });
+// }
+
 async function getMediaFiles(folderPath) {
-  return new Promise((resolve, reject) => {
-    fs.readdir(folderPath, async (err, extractedFolders) => {
-      if (err) {
-        console.error("Error reading directory:", err);
-        reject(err);
-        return;
+  try {
+    const files = await fs.promises.readdir(folderPath);
+    let mediaFiles = [];
+
+    for (const file of files) {
+      const fullPath = path.join(folderPath, file);
+      const stats = await fs.promises.stat(fullPath);
+
+      if (stats.isDirectory()) {
+        const nestedMediaFiles = await getMediaFiles(fullPath);
+        mediaFiles = mediaFiles.concat(nestedMediaFiles);
+      } else {
+        const ext = path.extname(file).toLowerCase();
+        const validExtensions = [
+          ".mp4",
+          ".avi",
+          ".mov",
+          ".wmv",
+          ".mkv",
+          ".flv",
+          ".webm",
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".gif",
+          ".bmp",
+        ];
+
+        if (validExtensions.includes(ext)) {
+          const sanitizedFilename = sanitizeAndRenameFile(file, folderPath);
+          mediaFiles.push(path.join(folderPath, sanitizedFilename));
+        }
       }
+    }
 
-      let mediaFiles = [];
-
-      for (const extractedFolder of extractedFolders) {
-        const extractedFolderFullPath = path.join(folderPath, extractedFolder);
-        const filesInExtractedFolder = await fs.promises.readdir(
-          extractedFolderFullPath
-        );
-
-        const extractedMediaFiles = filesInExtractedFolder
-          .filter((file) => {
-            const ext = path.extname(file).toLowerCase();
-            return [
-              ".mp4",
-              ".avi",
-              ".mov",
-              ".wmv",
-              ".mkv",
-              ".flv",
-              ".webm",
-              ".jpg",
-              ".jpeg",
-              ".png",
-              ".gif",
-              ".bmp",
-            ].includes(ext);
-          })
-          .map((file) => {
-            const sanitizedFilepath = sanitizeAndRenameFile(
-              file,
-              extractedFolderFullPath
-            );
-
-            return path.join(extractedFolderFullPath, sanitizedFilepath);
-          });
-
-        mediaFiles = mediaFiles.concat(extractedMediaFiles);
-      }
-
-      resolve(mediaFiles);
-    });
-  });
+    return mediaFiles;
+  } catch (error) {
+    console.error("Error reading directory:", error);
+    throw error;
+  }
 }
 
 async function applyEffect(inputPath) {
@@ -259,48 +310,6 @@ async function applyVideoEffect(videoPath) {
         console.error("Error removing metadata:", err);
         return reject(err);
       }
-
-      // const command = "ffmpeg";
-
-      // const args = [
-      //   "-i",
-      //   videoPath,
-      //   "-vf",
-      //   `eq=brightness=${randomBrightness}:saturation=${randomSaturation}`,
-      //   "-map_metadata",
-      //   "-1",
-      //   outputVideoPath,
-      // ];
-
-      // const childProcess = spawn(command, args);
-
-      // childProcess.on("close", (code) => {
-      //   if (code === 0) {
-      //     console.log("Effect applied to video:", videoPath);
-      //     fs.unlinkSync(videoPath);
-      //     fs.renameSync(outputVideoPath, videoPath);
-      //     resolve(outputVideoPath);
-      //   } else {
-      //     console.error("Error removing metadata:", err);
-      //     return reject(err);
-      //   }
-      // });
-
-      // ffmpeg(videoPath)
-      //   .outputOptions("-map_metadata", "-1")
-      //   .videoFilters(`eq=brightness=${randomBrightness}`) // Увеличиваем яркость для видео
-      //   // Удаляем метаданные
-      //   .on("error", (err) => {
-      //     console.error("Error applying video effect:", err);
-      //     reject(err);
-      //   })
-      //   .on("end", () => {
-      //     console.log("Effect applied to video:", videoPath);
-      //     fs.unlinkSync(videoPath);
-      //     fs.renameSync(outputVideoPath, videoPath);
-      //     resolve(outputVideoPath);
-      //   })
-      //   .save(outputVideoPath);
     } catch (e) {
       reject(e);
     }
@@ -335,54 +344,11 @@ async function applyImageEffect(imagePath) {
         console.error("Error applying image effect:", err);
         return reject(err);
       }
-
-      // ffmpeg(imagePath)
-      //   .outputOptions("-vf", `eq=brightness=${randomBrightness}`)
-      //   .on("error", (err) => {
-      //     console.error("Error applying image effect:", err);
-      //     reject(err);
-      //   })
-      //   .on("end", () => {
-      //     console.log("Effect applied to image:", imagePath);
-      //     fs.unlinkSync(imagePath);
-      //     fs.renameSync(outputImagePath, imagePath);
-      //     resolve(outputImagePath);
-      //   })
-      //   .save(outputImagePath);
     } catch (e) {
       reject(e);
     }
   });
 }
-
-// Функция применения эффекта к видео
-// async function applyEffect(videoPath) {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       const fileExt = path.extname(videoPath);
-//       const outputVideoPath = videoPath.replace(
-//         fileExt,
-//         "_processed" + fileExt
-//       ); // Создаем новый путь с измененным расширением
-
-//       ffmpeg(videoPath)
-//         .videoFilters("eq=brightness=1.5") // Увеличиваем яркость
-//         .on("error", (err) => {
-//           console.error("Error applying effect:", err);
-//           reject(err);
-//         })
-//         .on("end", () => {
-//           console.log("Effect applied to video:", videoPath);
-//           fs.unlinkSync(videoPath);
-//           fs.renameSync(outputVideoPath, videoPath);
-//           resolve();
-//         })
-//         .save(outputVideoPath);
-//     } catch (e) {
-//       reject(e);
-//     }
-//   });
-// }
 
 // Функция создания и отправки архива с обработанными видео
 async function sendArchive(ctx, zipFileName) {
