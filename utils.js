@@ -19,18 +19,18 @@ function getRandomInRange(minValues, maxValues) {
 // }
 
 function getRandomNoise() {
-  return getRandom(1, 5).toFixed(4);
+  return getRandom(3, 7).toFixed(4);
 }
 
 function getRandomBrightness() {
-  const minValues = [-0.1, 0.03];
-  const maxValues = [-0.03, 0.1];
+  const minValues = [-0.05, 0.01];
+  const maxValues = [-0.01, 0.05];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
 function getRandomSaturation() {
-  const minValues = [0.9, 1.03];
-  const maxValues = [0.97, 1.1];
+  const minValues = [0.95, 1.01];
+  const maxValues = [0.99, 1.05];
   return getRandomInRange(minValues, maxValues).toFixed(8);
 }
 
