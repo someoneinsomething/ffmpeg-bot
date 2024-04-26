@@ -5,6 +5,7 @@ const archiver = require("archiver");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 const { exec, execSync } = require("child_process");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const { downloadFile, extractFiles } = require("./file");
@@ -113,26 +114,32 @@ async function processVideos(ctx, folderPath) {
 function sanitizeAndRenameFile(filePath, directory) {
   try {
     // Получаем базовое имя файла
-    const originalFileName = filePath.split("/").pop();
+    // const originalFileName = filePath.split("/").pop();
+
+    const extension = path.extname(filePath).toLowerCase();
+
+    const originalFileName = `image_${crypto
+      .randomBytes(3)
+      .toString("hex")}${extension}`;
 
     // Проверяем, есть ли недопустимые символы в названии файла
-    if (!/[$&*()!<>:"/\\|?* ]/g.test(originalFileName)) {
-      return filePath;
-    }
+    // if (!/[$&*()!<>:"/\\|?* ]/g.test(originalFileName)) {
+    //   return originalFileName;
+    // }
 
-    // Убираем недопустимые символы из названия файла
-    const sanitizedFileName = originalFileName.replace(
-      /[$&*()!<>:"/\\|?* ]/g,
-      "_"
-    );
+    // // Убираем недопустимые символы из названия файла
+    // const sanitizedFileName = originalFileName.replace(
+    //   /[$&*()!<>:"/\\|?* ]/g,
+    //   "_"
+    // );
 
     const oldFilePath = `${directory}/${filePath}`;
-    const newFilePath = `${directory}/${sanitizedFileName}`;
+    const newFilePath = `${directory}/${originalFileName}`;
 
     // Переименовываем файл
     fs.renameSync(oldFilePath, newFilePath);
 
-    return sanitizedFileName;
+    return originalFileName;
   } catch (error) {
     console.error(`Ошибка при переименовании файла: ${error}`);
     return null;
