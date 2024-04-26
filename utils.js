@@ -19,7 +19,7 @@ function getRandomInRange(minValues, maxValues) {
 // }
 
 function getRandomNoise() {
-  return getRandom(15, 30).toFixed(4);
+  return getRandom(1, 5).toFixed(4);
 }
 
 function getRandomBrightness() {
