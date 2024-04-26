@@ -92,6 +92,7 @@ bot.on("document", async (ctx) => {
 // Функция обработки видео
 async function processVideos(ctx, folderPath) {
   const videoFiles = await getMediaFiles(folderPath);
+  console.log(videoFiles);
   await ctx.reply(`[3/5] Всего найдено медиафайлов: ${videoFiles.length}`);
 
   let processedCount = 0;
@@ -234,31 +235,31 @@ async function getMediaFiles(folderPath) {
         mediaFiles = mediaFiles.concat(nestedMediaFiles);
       } else {
         const ext = path.extname(file).toLowerCase();
-        const validExtensions = [
-          ".mp4",
-          ".avi",
-          ".mov",
-          ".wmv",
-          ".mkv",
-          ".flv",
-          ".webm",
-          ".jpg",
-          ".jpeg",
-          ".png",
-          ".gif",
-          ".bmp",
-        ];
-
-        if (validExtensions.includes(ext)) {
-          const sanitizedFilename = sanitizeAndRenameFile(file, folderPath);
-          mediaFiles.push(path.join(folderPath, sanitizedFilename));
+        if (
+          [
+            ".mp4",
+            ".avi",
+            ".mov",
+            ".wmv",
+            ".mkv",
+            ".flv",
+            ".webm",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".bmp",
+          ].includes(ext)
+        ) {
+          const sanitizedFilepath = sanitizeAndRenameFile(file, folderPath);
+          mediaFiles.push(path.join(folderPath, sanitizedFilepath));
         }
       }
     }
 
     return mediaFiles;
   } catch (error) {
-    console.error("Error reading directory:", error);
+    console.error("Error processing directory:", error);
     throw error;
   }
 }
