@@ -45,9 +45,14 @@ function tweakResolution({ width, height }) {
   return { newWidth, newHeight };
 }
 
+function getRandomBoxblur() {
+  return getRandom(0.25, 0.4).toFixed(2);
+}
+
 module.exports = {
   getRandomBrightness,
   getRandomSaturation,
   tweakResolution,
   getRandomNoise,
+  getRandomBoxblur,
 };
