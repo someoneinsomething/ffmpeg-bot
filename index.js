@@ -334,7 +334,7 @@ async function applyImageEffect(imagePath) {
 
       try {
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=5:1 -map_metadata -1 ${outputImagePath}`
+          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=1:0.1 -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
