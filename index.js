@@ -60,8 +60,6 @@ bot.on("document", async (ctx) => {
     // Извлекаем файлы из архива
     await extractFiles(zipFilePath, extractedFolder);
 
-    console.log(zipFileName);
-
     await ctx.reply("[2/5] Медиафайлы разархивированы");
 
     // Обрабатываем видео
@@ -336,7 +334,7 @@ async function applyImageEffect(imagePath) {
 
       try {
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u -map_metadata -1 ${outputImagePath}`
+          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=5:1 -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
@@ -362,7 +360,6 @@ async function sendArchive(ctx, zipFileName) {
         { source: path.join(TEMP_FOLDER, zipFileName) },
         { caption: "[5/5] Обработанные медиафайлы" }
       );
-      console.log("replied");
       await cleanup();
     } catch (e) {
       console.error("Error while sending archive", e);
