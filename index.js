@@ -335,8 +335,11 @@ async function applyImageEffect(imagePath) {
       const { newWidth, newHeight } = tweakResolution(resolution);
 
       try {
+        // execSync(
+        //   `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=5:${boxblur} -map_metadata -1 ${outputImagePath}`
+        // );
         execSync(
-          `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=5:${boxblur} -map_metadata -1 ${outputImagePath}`
+          `ffmpeg -i ${imagePath} -vf boxblur=5:${boxblur} -map_metadata -1 ${outputImagePath}`
         );
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
