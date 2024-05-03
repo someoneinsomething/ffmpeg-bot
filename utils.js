@@ -55,4 +55,5 @@ module.exports = {
   tweakResolution,
   getRandomNoise,
   getRandomBoxblur,
+  getRandom,
 };

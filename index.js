@@ -15,6 +15,7 @@ const {
   tweakResolution,
   getRandomNoise,
   getRandomBoxblur,
+  getRandom,
 } = require("./utils");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -334,13 +335,34 @@ async function applyImageEffect(imagePath) {
 
       const { newWidth, newHeight } = tweakResolution(resolution);
 
+      let text = `ffmpeg -i ${imagePath} -vf boxblur=5:${boxblur}`;
+
+      for (let i = 0; i < 4; i++) {
+        const uuid = crypto.randomBytes(3).toString("hex");
+
+        let x = getRandom(15, 25);
+        let y = getRandom(15, 25);
+
+        if (i === 1) {
+          y = resolution.height - y * 5;
+        } else if (i === 2) {
+          x = resolution.width - x * 5;
+        } else if (i === 3) {
+          y = resolution.height - y * 5;
+          x = resolution.width - x * 5;
+        }
+
+        text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y}`;
+      }
+
+      text += ` -map_metadata -1 ${outputImagePath}`;
+
       try {
         // execSync(
         //   `ffmpeg -i ${imagePath} -vf eq=brightness=${randomBrightness}:saturation=${randomSaturation},scale=${newWidth}:${newHeight},noise=alls=${noise}:allf=t+u,boxblur=5:${boxblur} -map_metadata -1 ${outputImagePath}`
         // );
-        execSync(
-          `ffmpeg -i ${imagePath} -vf boxblur=5:${boxblur} -map_metadata -1 ${outputImagePath}`
-        );
+
+        execSync(text);
         fs.unlinkSync(imagePath);
         fs.renameSync(outputImagePath, imagePath);
         return resolve(outputImagePath);
