@@ -353,8 +353,8 @@ async function applyImageEffect(imagePath) {
         }
 
         text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y},crop=in_w:in_h-in_h*${getRandom(
-          0.0125,
-          0.0125
+          0.015,
+          0.015
         )}:0:0`;
       }
 
