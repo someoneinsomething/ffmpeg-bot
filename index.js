@@ -353,12 +353,14 @@ async function applyImageEffect(imagePath) {
         }
 
         text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y},crop=in_w:in_h-in_h*${getRandom(
-          0.01,
-          0.01
+          0.0125,
+          0.0125
         )}:0:0`;
       }
 
-      text += ` -q:v ${getRandom(2, 5)} -map_metadata -1 ${outputImagePath}`;
+      // -q:v ${getRandom(2, 5)} сжатие
+
+      text += ` -map_metadata -1 ${outputImagePath}`;
 
       try {
         // execSync(
