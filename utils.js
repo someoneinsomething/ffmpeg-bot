@@ -35,7 +35,7 @@ function getRandomSaturation() {
 }
 
 function tweakResolution({ width, height }) {
-  const minPercentageChange = 0.02; // Минимальное изменение на 3%
+  const minPercentageChange = 0.07; // Минимальное изменение на 3%
   const maxPercentageChange = 0.07; // Максимальное изменение на 7%
 
   const percentageChange = getRandom(minPercentageChange, maxPercentageChange);

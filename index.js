@@ -335,7 +335,7 @@ async function applyImageEffect(imagePath) {
 
       const { newWidth, newHeight } = tweakResolution(resolution);
 
-      let text = `ffmpeg -i ${imagePath} -vf boxblur=5:${boxblur}`;
+      let text = `ffmpeg -i ${imagePath} -vf boxblur=5:${boxblur},scale=${resolution.width}:${newHeight}`;
 
       for (let i = 0; i < 4; i++) {
         const uuid = crypto.randomBytes(3).toString("hex");
