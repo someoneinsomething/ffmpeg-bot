@@ -355,7 +355,7 @@ async function applyImageEffect(imagePath) {
         text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y}`;
       }
 
-      text += ` -map_metadata -1 ${outputImagePath}`;
+      text += ` -q:v ${getRandom(2, 5)} -map_metadata -1 ${outputImagePath}`;
 
       try {
         // execSync(
