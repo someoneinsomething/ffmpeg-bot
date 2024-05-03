@@ -352,7 +352,10 @@ async function applyImageEffect(imagePath) {
           x = resolution.width - x * 5;
         }
 
-        text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y}`;
+        text += `,drawtext=text='${uuid}':fontsize=16:fontcolor=black@0.1:x=${x}:y=${y},crop=in_w:in_h-in_h*${getRandom(
+          0.015,
+          0.015
+        )}:0:0`;
       }
 
       text += ` -q:v ${getRandom(2, 5)} -map_metadata -1 ${outputImagePath}`;
