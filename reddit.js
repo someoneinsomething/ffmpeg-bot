@@ -15,14 +15,25 @@ const start = async () => {
 
   const done = fs.readFileSync("./done.txt").toString().split("\n");
 
+  const performName = (item) => {
+    let name = item.split("/")[item.split("/").length - 1];
+
+    if (name.endsWith("/")) {
+      name = myString.slice(0, -1);
+    }
+
+    return name;
+  };
+
   data.result.forEach((item) => {
     const link = `https://www.reddit.com/r/${item.name}`;
 
-    if (done.some((item) => item === link)) {
+    if (done.some((old) => performName(old) === item.name.toLowerCase())) {
+      console.log("filtered");
       return;
     }
 
-    if (item.subscribers < 100000) {
+    if (item.subscribers > 100000) {
       return;
     }
 
