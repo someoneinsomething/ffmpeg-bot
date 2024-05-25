@@ -1,4 +1,4 @@
-const { Telegraf } = require("telegraf");
+const { Telegraf, Markup } = require("telegraf");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
@@ -41,15 +41,80 @@ bot.start(
     )
 );
 
-// Обработчик полученного zip-архива
-bot.on("document", async (ctx) => {
-  const document = ctx.message.document;
+bot.action("document_filenames", async (ctx) => {
+  try {
+    const document = global.currentDocument;
 
-  if (!fs.existsSync(TEMP_FOLDER)) {
-    fs.mkdirSync(TEMP_FOLDER);
+    if (!document) {
+      return await ctx.reply("Произошла ошибка при получении названий файлов.");
+    }
+
+    const zipFileName = document.file_name;
+    const zipFilePath = path.join(TEMP_FOLDER, zipFileName);
+    const extractedFolder = path.join(TEMP_FOLDER, "extracted");
+
+    // Получаем прямую ссылку на файл и загружаем его
+    await downloadFile(document.file_id, zipFilePath, bot);
+
+    await ctx.reply("[1/4] Файл загружен");
+
+    // Извлекаем файлы из архива
+    await extractFiles(zipFilePath, extractedFolder);
+
+    await ctx.reply("[2/4] Медиафайлы разархивированы");
+
+    const successFilename = "success.txt";
+
+    getFileNames(
+      ctx,
+      path.join(extractedFolder, path.parse(zipFileName).name),
+      successFilename
+    );
+
+    await ctx.reply("[3/4] Медиафайлы обработаны");
+
+    // Отправляем архив с обработанными видео
+
+    await sendFile(ctx, successFilename, path.parse(zipFileName).name);
+  } catch (e) {
+    console.log(e);
+    return await ctx.reply("Произошла ошибка при получении названий файлов.");
+  }
+});
+
+function getFileNames(ctx, folder, successFilename) {
+  function listFilesInDirectory(dir, fileList = []) {
+    const files = fs.readdirSync(dir);
+
+    files.forEach((file) => {
+      const filePath = path.join(dir, file);
+      if (fs.statSync(filePath).isDirectory()) {
+        listFilesInDirectory(filePath, fileList);
+      } else {
+        fileList.push(path.parse(filePath).name);
+      }
+    });
+
+    return fileList;
   }
 
+  const files = listFilesInDirectory(folder);
+
+  const fileContent = files.join("\n");
+
+  fs.writeFileSync(path.join(folder, successFilename), fileContent);
+
+  console.log(fileContent);
+}
+
+bot.action("document_unique", async (ctx) => {
   try {
+    const document = global.currentDocument;
+
+    if (!document) {
+      return await ctx.reply("Произошла ошибка при уникализации фотографий.");
+    }
+
     const zipFileName = document.file_name;
     const zipFilePath = path.join(TEMP_FOLDER, zipFileName);
     const extractedFolder = path.join(TEMP_FOLDER, "extracted");
@@ -77,8 +142,39 @@ bot.on("document", async (ctx) => {
 
     // Отправляем архив с обработанными видео
     await sendArchive(ctx, zipFileName);
+  } catch (e) {
+    console.log(e);
+
+    return await ctx.reply("Произошла ошибка при уникализации фотографий.");
+  }
+});
+
+// Обработчик полученного zip-архива
+bot.on("document", async (ctx) => {
+  const document = ctx.message.document;
+
+  if (!fs.existsSync(TEMP_FOLDER)) {
+    fs.mkdirSync(TEMP_FOLDER);
+  }
+
+  try {
+    global.currentDocument = document;
+
+    await ctx.sendMessage(
+      "Что делаем с архивом?",
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Уникализируем", "document_unique")],
+        [
+          Markup.button.callback(
+            "Достаем названия файлов",
+            "document_filenames"
+          ),
+        ],
+      ])
+    );
   } catch (err) {
     console.error("Error processing zip archive:", err);
+
     if (err?.response?.description === "Bad Request: file is too big") {
       return await ctx.reply(
         "Произошла ошибка при обработке zip-архива. Архив слишком большой"
@@ -410,6 +506,28 @@ async function sendArchive(ctx, zipFileName) {
 
   archive.pipe(output);
   archive.finalize();
+}
+
+async function sendFile(ctx, fileName, folderName) {
+  // const output = fs.createWriteStream(
+  //   path.join(TEMP_FOLDER, "extracted", folderName, fileName)
+  // );
+
+  // console.log(path.join(TEMP_FOLDER, "extracted", folderName, fileName));
+
+  // output.on("close", async () => {
+  try {
+    await ctx.replyWithDocument(
+      { source: path.join(TEMP_FOLDER, "extracted", folderName, fileName) },
+      { caption: "[4/4] Обработанные медиафайлы" }
+    );
+    await cleanup();
+  } catch (e) {
+    console.error("Error while sending archive", e);
+    await ctx.reply("Ошибка при отправке архива");
+    await cleanup();
+  }
+  // });
 }
 
 // Функция удаления временных файлов
